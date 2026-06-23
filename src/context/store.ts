@@ -76,39 +76,51 @@ export const useStore = create<AppState>()(
 
       signup: (newUser) => {
         const { users } = get();
-        const exists = users.some((u) => u.email.toLowerCase() === newUser.email.toLowerCase());
+        const cleanEmail = newUser.email.trim().toLowerCase();
+        const exists = users.some((u) => u.email.trim().toLowerCase() === cleanEmail);
         if (exists) {
           return { success: false, error: 'User already exists with this email' };
         }
-        set({ users: [...users, newUser] });
+        const cleanedUser = { ...newUser, email: cleanEmail };
+        set({ users: [...users, cleanedUser] });
+        console.log('[Auth Debug] Signup successful. Registered users now:', get().users.map(u => ({ email: u.email, username: u.username })));
         return { success: true };
       },
 
       login: ({ email, password }) => {
         const { users } = get();
+        const cleanEmail = email.trim().toLowerCase();
+        console.log('[Auth Debug] Login attempt:', { inputEmail: cleanEmail, inputPassword: password });
+        console.log('[Auth Debug] Available users in store:', users.map(u => ({ email: u.email, password: u.password })));
+        
         const user = users.find(
-          (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+          (u) => u.email.trim().toLowerCase() === cleanEmail && u.password === password
         );
         if (!user) {
+          console.log('[Auth Debug] Login failed: No matching user found.');
           return { success: false, error: 'Invalid email or password' };
         }
         set({ isLoggedIn: true, currentUser: { username: user.username, email: user.email } });
+        console.log('[Auth Debug] Login successful for:', user.username);
         return { success: true };
       },
 
       logout: () => {
         set({ isLoggedIn: false, currentUser: null, activeAlarmTask: null });
+        console.log('[Auth Debug] User logged out.');
       },
 
       resetPassword: (email, newPassword) => {
         const { users } = get();
-        const userIndex = users.findIndex((u) => u.email.toLowerCase() === email.toLowerCase());
+        const cleanEmail = email.trim().toLowerCase();
+        const userIndex = users.findIndex((u) => u.email.trim().toLowerCase() === cleanEmail);
         if (userIndex === -1) {
           return { success: false, error: 'User not found' };
         }
         const updatedUsers = [...users];
         updatedUsers[userIndex] = { ...updatedUsers[userIndex], password: newPassword };
         set({ users: updatedUsers });
+        console.log('[Auth Debug] Password reset successful for:', cleanEmail);
         return { success: true };
       },
 
